@@ -136,11 +136,12 @@ function onKey(e: KeyboardEvent) {
 function tryHit(id: number) {
   const g = grade(id);
   if (!g) return;
+
   show(g);
+
   const note = notes.value.find((n) => n.id === id);
   if (note) jumps.value[note.lane]++;
-  count++;
-  console.log("hits:", count);
+
   remove(id);
 }
 

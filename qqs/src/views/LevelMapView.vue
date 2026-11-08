@@ -101,7 +101,7 @@ onActivated(refresh);
   z-index: 5;
   padding: 9px 16px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.9);
   color: #487491;
   font-family: "Lilita One", system-ui, sans-serif;

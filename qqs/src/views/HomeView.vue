@@ -22,7 +22,7 @@ const MESSAGES = tutorial.done
   ? ["Now you're ready to take your first flight!"]
   : [
       "It's been cold lately, so lets help our feathered friend get to warmer weather!",
-      "Walk to the other house start your journey. (wasd)",
+      "Walk to the other house to start your journey. (WASD)",
     ];
 
 const router = useRouter();

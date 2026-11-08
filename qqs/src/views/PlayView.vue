@@ -7,108 +7,52 @@
       <span>Combo: {{ combo }}</span>
     </header>
 
-    <div class="field">
-      <BackgroundView :lanes="LANES" />
-
-      <div class="lanes">
-        <div
-          v-for="(key, lane) in KEYS"
-          :key="key"
-          class="lane"
-          @pointerdown.prevent="pressLane(lane)"
-          @pointerup.prevent="releaseLane(lane)"
-          @pointercancel="releaseLane(lane)"
-        >
-          <div
-            v-for="note in visibleNotes(lane)"
-            :key="note.id"
-            class="note"
-            :class="{
-              hold: note.type === 'hold',
-              holding: note.holding,
-            }"
-            :style="notePosition(note)"
-          ></div>
-
-          <span class="keycap">{{ key.toUpperCase() }}</span>
-        </div>
-      </div>
-
-      <div class="hitline"></div>
-
-      <img
-        v-for="(j, lane) in jumps"
-        :key="`${lane}-${j}`"
-        class="bird"
-        :class="{ jump: j > 0 }"
-        :style="{
-          left: `${(lane * 100) / LANES}%`,
-          width: `${100 / LANES}%`,
-        }"
-        src="/rhythm_bg/flying.png"
-        alt=""
-      />
-
-      <div
-        v-if="message"
-        :key="messageKey"
-        class="judge"
-        :class="{ good: message === 'GOOD!' }"
-      >
-        {{ message }}
-      </div>
-
+    <RhythmField
+      :notes="notes"
+      :song-time="songTime"
+      :jumps="jumps"
+      :message="message"
+      :message-key="messageKey"
+      @press="pressLane"
+      @release="releaseLane"
+    >
       <div v-if="!started && !finished" class="overlay">
         <h1>Level {{ currentLevel }}</h1>
         <p>Use A S D J K L to tap or hold notes.</p>
         <button @click="startLevel(currentLevel)">Start Battle</button>
       </div>
 
-      <div v-if="finished && currentLevel === 9" class="ending-screen">
-        <img src="/ending/ending.png" alt="Thank you for playing!" />
-        <button class="ending-back" @click="goMap">← Level Map</button>
-      </div>
-
-      <div v-else-if="finished" class="overlay">
-        <h1>Battle Complete!</h1>
-
-        <h2>{{ accuracy }}% Accuracy</h2>
-        <p>{{ accuracyRating }}</p>
-
-        <p>Score: {{ score }}</p>
-        <p>Perfect: {{ hits }} | Missed: {{ misses }}</p>
-
-        <button @click="goMap">Level Map</button>
-        <button @click="startLevel(currentLevel)">Retry</button>
-      </div>
-    </div>
+      <Results
+        v-if="finished"
+        :level="currentLevel"
+        :accuracy="accuracy"
+        :rating="accuracyRating"
+        :score="score"
+        :hits="hits"
+        :misses="misses"
+        @map="goMap"
+        @retry="startLevel(currentLevel)"
+      />
+    </RhythmField>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import BackgroundView from "../components/BackgroundView.vue";
+import RhythmField from "../components/RhythmField.vue";
+import Results from "../components/Results.vue";
+import { simplifyChart } from "../utils/chartUtils";
+import type { Note, ChartNote } from "../utils/chartUtils";
 import { isLevelUnlocked, markLevelComplete } from "../utils/levelProgress";
 
 const router = useRouter();
 const route = useRoute();
 
-type Note = {
-  id: number;
-  time: number;
-  lane: number;
-  type: "tap" | "hold";
-  duration: number;
-  done: boolean;
-  holding: boolean;
-};
-
-const LANES = 6;
 const KEYS = ["a", "s", "d", "j", "k", "l"];
+const LANES = 6;
 
 const requested = Number(route.query.level ?? 1);
-
 const currentLevel = ref(
   Number.isInteger(requested) && requested >= 1 && requested <= 9
     ? requested
@@ -127,7 +71,6 @@ const finished = ref(false);
 
 const message = ref("");
 const messageKey = ref(0);
-
 const jumps = ref<number[]>(Array(LANES).fill(0));
 
 const startTime = ref(0);
@@ -136,43 +79,22 @@ const levelDuration = ref(30);
 const perfectWindow = 0.1;
 const goodWindow = 0.25;
 const hitWindow = goodWindow;
-const travelTime = 2;
-
-const noteLimits: Record<number, number> = {
-  1: 35,
-  2: 45,
-  3: 50,
-  4: 60,
-  5: 55,
-  6: 60,
-  7: 65,
-  8: 70,
-  9: 75,
-};
-
-function simplifyChart(chartNotes: any[], level: number) {
-  const limit = noteLimits[level] ?? chartNotes.length;
-
-  if (chartNotes.length <= limit) return chartNotes;
-
-  const result = [];
-
-  for (let i = 0; i < limit; i++) {
-    const index = Math.floor((i * chartNotes.length) / limit);
-
-    result.push(chartNotes[index]);
-  }
-
-  return result;
-}
 
 let audio: HTMLAudioElement | null = null;
 let animationId = 0;
 
+// Score and accuracy
 const accuracy = computed(() => {
   const total = hits.value + misses.value;
-
   return total ? Math.round((hits.value / total) * 100) : 0;
+});
+
+const accuracyRating = computed(() => {
+  if (accuracy.value === 100) return "PERFECT!";
+  if (accuracy.value >= 90) return "AMAZING!";
+  if (accuracy.value >= 75) return "GREAT!";
+  if (accuracy.value >= 50) return "GOOD!";
+  return "KEEP PRACTICING!";
 });
 
 function showMessage(text: string) {
@@ -180,6 +102,7 @@ function showMessage(text: string) {
   messageKey.value++;
 }
 
+// Music controls
 function stopAudio() {
   cancelAnimationFrame(animationId);
   audio?.pause();
@@ -217,13 +140,17 @@ async function startLevel(level: number) {
       throw new Error(`Missing chart for level ${level}`);
     }
 
-    const chart = await response.json();
+    const chart: {
+      startTime?: number;
+      duration?: number;
+      notes: ChartNote[];
+    } = await response.json();
 
     startTime.value = chart.startTime ?? 0;
     levelDuration.value = chart.duration ?? 30;
 
     notes.value = simplifyChart(chart.notes, level).map(
-      (note: Omit<Note, "id" | "done" | "holding">, id: number) => ({
+      (note: ChartNote, id: number) => ({
         ...note,
         id,
         done: false,
@@ -252,13 +179,13 @@ async function startLevel(level: number) {
       });
     }
 
+    if (audio !== player) return;
+
     player.currentTime = startTime.value;
 
     if (player.seeking) {
       await new Promise<void>((resolve) => {
-        player.addEventListener("seeked", () => resolve(), {
-          once: true,
-        });
+        player.addEventListener("seeked", () => resolve(), { once: true });
       });
     }
 
@@ -275,19 +202,12 @@ async function startLevel(level: number) {
   }
 }
 
+// Hit and miss logic
 function missNote() {
   misses.value++;
   combo.value = 0;
   showMessage("MISS");
 }
-
-const accuracyRating = computed(() => {
-  if (accuracy.value === 100) return "PERFECT!";
-  if (accuracy.value >= 90) return "AMAZING!";
-  if (accuracy.value >= 75) return "GREAT!";
-  if (accuracy.value >= 50) return "GOOD!";
-  return "KEEP PRACTICING!";
-});
 
 function hitNote(note: Note, judgment: "PERFECT!" | "GOOD!") {
   if (note.done) return;
@@ -297,14 +217,13 @@ function hitNote(note: Note, judgment: "PERFECT!" | "GOOD!") {
 
   hits.value++;
   combo.value++;
-
   score.value += judgment === "PERFECT!" ? 100 : 50;
 
   jumps.value[note.lane]++;
-
   showMessage(judgment);
 }
 
+// Main game loop
 function update() {
   if (!audio || finished.value || !started.value) return;
 
@@ -320,15 +239,12 @@ function update() {
     } else if (songTime.value > note.time + hitWindow) {
       note.done = true;
       missNote();
-
-      if (finished.value) return;
     }
   }
 
   if (songTime.value >= levelDuration.value) {
     finished.value = true;
     audio.pause();
-
     markLevelComplete(currentLevel.value);
     return;
   }
@@ -336,25 +252,7 @@ function update() {
   animationId = requestAnimationFrame(update);
 }
 
-function visibleNotes(lane: number) {
-  return notes.value.filter(
-    (note) =>
-      note.lane === lane &&
-      !note.done &&
-      (note.holding ||
-        (note.time >= songTime.value - hitWindow &&
-          note.time <= songTime.value + travelTime)),
-  );
-}
-
-function notePosition(note: Note) {
-  const remaining = note.time - songTime.value;
-
-  return {
-    top: `${80 - (remaining / travelTime) * 75}%`,
-  };
-}
-
+// Keyboard and hold notes
 function pressLane(lane: number) {
   if (!started.value || finished.value || !audio) return;
 
@@ -391,6 +289,7 @@ function releaseLane(lane: number) {
 
   if (!note) return;
 
+  // Allow releasing up to 0.1 seconds early
   if (songTime.value >= note.time + note.duration - 0.1) {
     hitNote(note, "PERFECT!");
   } else {
@@ -406,7 +305,6 @@ function keyDown(event: KeyboardEvent) {
   const lane = KEYS.indexOf(event.key.toLowerCase());
 
   if (lane !== -1) {
-    console.log("Key pressed:", event.key);
     pressLane(lane);
   }
 }
@@ -414,15 +312,14 @@ function keyDown(event: KeyboardEvent) {
 function keyUp(event: KeyboardEvent) {
   const lane = KEYS.indexOf(event.key.toLowerCase());
 
-  if (lane !== -1) releaseLane(lane);
+  if (lane !== -1) {
+    releaseLane(lane);
+  }
 }
 
 onMounted(() => {
   window.addEventListener("keydown", keyDown);
   window.addEventListener("keyup", keyUp);
-
-  const selectedLevel = Number(route.query.level || 1);
-  currentLevel.value = selectedLevel;
 });
 
 onUnmounted(() => {
@@ -463,137 +360,9 @@ onUnmounted(() => {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.92);
   color: #487491;
-  cursor: pointer;
   font-family: "Lilita One", system-ui, sans-serif;
   font-size: 1rem;
-}
-
-.field {
-  position: relative;
-  width: min(100%, 480px);
-  height: 100dvh;
-  margin: 0 auto;
-  overflow: hidden;
-  background: #000 url("/rhythm_bg/sky.png") center / cover no-repeat;
-  touch-action: none;
-}
-
-.lanes {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  z-index: 1;
-}
-
-.lane {
-  position: relative;
-  border-right: 1px solid #ffffff50;
-  touch-action: none;
-}
-
-.note {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 100px;
-  border: 0;
-  border-radius: 8px;
-  background: #6bd6ff;
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.note.hold {
-  height: 150px;
-  background: #ffe48c;
-  border: 2px solid #ffffff;
-  box-sizing: border-box;
-}
-
-.note.holding {
-  background: #ffbb54;
-  border: 3px solid #ffffff;
-  box-sizing: border-box;
-}
-
-.hitline {
-  position: absolute;
-  top: 80%;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: white;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.keycap {
-  position: absolute;
-  top: 85%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.4rem;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.bird {
-  position: absolute;
-  bottom: 20%;
-  margin-bottom: -40px;
-  height: auto;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.bird.jump {
-  animation: hop 0.25s ease-out;
-}
-
-@keyframes hop {
-  0% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-24px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-.judge {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 7%;
-  text-align: center;
-  font-size: 2rem;
-  text-transform: uppercase;
-  color: #ffe286;
-  z-index: 4;
-  pointer-events: none;
-  animation: pop 0.25s ease-out;
-}
-
-.judge {
-  color: #ffe286;
-}
-
-.judge.good {
-  color: #6bd6ff;
-}
-
-@keyframes pop {
-  from {
-    opacity: 0;
-    transform: scale(0.7);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  cursor: pointer;
 }
 
 .overlay {
@@ -608,36 +377,5 @@ onUnmounted(() => {
   gap: 16px;
   text-align: center;
   padding: 25px;
-}
-
-.ending-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: #b9d778;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.ending-screen img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.ending-back {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #487491;
-  font-family: "Lilita One", system-ui, sans-serif;
-  font-size: 1rem;
-  cursor: pointer;
 }
 </style>
