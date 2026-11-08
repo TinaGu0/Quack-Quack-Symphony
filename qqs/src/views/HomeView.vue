@@ -1,33 +1,41 @@
 <template>
   <div class="home">
     <AreaMap :area="AREA" @near="near = $event" />
-
-    <div v-if="near === 'home'" class="menu">
-      <button>Take flight</button>
-      <button>Stay</button>
-    </div>
-
-    <div v-else-if="near === 'tutorial'" class="menu">
-      <button @click="router.push('/tutorial')">Tutorial</button>
+    <Notifications :messages="MESSAGES" />
+    <div v-if="location" class="menu">
+      <button v-for="c in location.choices" :key="c.label" @click="choose(c)">
+        {{ c.label }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import AreaMap from "../components/AreaMap.vue";
-import { AREA} from "../areas";
+import { AREA, LOCATIONS, type Choice } from "../areas";
+import Notifications from "../components/NotificationsPanel.vue";
+
+const MESSAGES = [
+  "Welcome! It's been getting cold lately, so lets help our feathered friend get to warmer weather.",
+  "Make your way to the other house to begin your journey.",
+];
 
 const router = useRouter();
 const near = ref<string | null>(null);
+const location = computed(() => LOCATIONS.find((l) => l.id === near.value));
+
+function choose(c: Choice) {
+  if (c.to) router.push(c.to);
+}
 </script>
 
 <style scoped>
 .home { position: fixed; inset: 0; }
 .menu {
   position: absolute;
-  top: 50%;
+  bottom: 5%;
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
@@ -38,9 +46,9 @@ const near = ref<string | null>(null);
 .menu button {
   padding: 12px 40px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.92);
-  color: #3b82c4;
+  color: #487491;
   font-size: 1.5rem;
   cursor: pointer;
 }

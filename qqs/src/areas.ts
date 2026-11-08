@@ -19,3 +19,17 @@ export const AREA: Area = {
   ],
   solid: ["water", "houses", "trees"],
 };
+
+export type Choice = { label: string; to?: string };
+export type Location = { id: string; choices: Choice[] };
+
+export const LOCATIONS: Location[] = [
+  {
+    id: "home",
+    choices: [{ label: "Main Menu", to: "/" }],
+  },
+  {
+    id: "tutorial",
+    choices: [{ label: "Your First Flight", to: "/tutorial" }],
+  },
+];

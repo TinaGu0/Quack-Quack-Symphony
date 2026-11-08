@@ -14,6 +14,7 @@ const GOOSE = { scale: 0.15, speed: 60 };
 const DIRS = ["Back", "Front", "Left", "Right"];
 const FRAMES = ["idle", "walk1", "walk2"];
 const ZOOM = 4;
+const ZONE = 48;
 
 const container = ref<HTMLDivElement>();
 let game: Phaser.Game;
@@ -52,7 +53,7 @@ class AreaScene extends Phaser.Scene {
       "Front-idle"
     );
     this.goose.setScale(GOOSE.scale).setCollideWorldBounds(true).setDepth(5);
-    this.goose.body!.setSize(40, 20).setOffset(44, 100); // keep your tuned hitbox values here
+    this.goose.body!.setSize(40, 20).setOffset(44, 100);
 
     DIRS.forEach((d) =>
       this.anims.create({
@@ -71,10 +72,14 @@ class AreaScene extends Phaser.Scene {
     });
     layers["trees"]?.setDepth(10);
 
-    this.zones = (map.getObjectLayer("interact")?.objects ?? []).map((o) => ({
-      name: o.name,
-      rect: new Phaser.Geom.Rectangle(o.x!, o.y!, o.width!, o.height!),
-    }));
+    this.zones = (map.getObjectLayer("interact")?.objects ?? []).map((o) => {
+      const w = o.width || ZONE;
+      const h = o.height || ZONE;
+      return {
+        name: o.name,
+        rect: new Phaser.Geom.Rectangle(o.x! - w / 2, o.y! - h / 2, w, h),
+      };
+    });
 
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -129,7 +134,7 @@ onBeforeUnmount(() => game?.destroy(true));
 
 <style scoped>
 .area { 
-    position: absolute; inset: 0;
-    background: #3b3626;
- }
+    position: fixed; inset: 0; 
+    background: #1a1a2e;
+    }
 </style>

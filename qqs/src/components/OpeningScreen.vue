@@ -80,22 +80,22 @@ onBeforeUnmount(() => clearTimeout(timer));
   background: #fff;
   border-radius: 50%;
 }
-.play::before {            /* big puff */
+.play::before {
   width: 90px;
   height: 90px;
   top: -38px;
   left: 28px;
 }
-.play::after {             /* small puff */
+.play::after {
   width: 66px;
   height: 66px;
   top: -26px;
   right: 30px;
 }
 .play span {
-  position: relative;      /* keeps the text above the puffs */
+  position: relative;
   z-index: 1;
-  color: #7EC0ED;
+  color: #487491;
   font-size: 2.5rem;
   font-weight: 700;
 }
