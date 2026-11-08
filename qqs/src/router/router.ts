@@ -5,5 +5,6 @@ export const router = createRouter({
   routes: [
     { path: "/", component: () => import("../components/OpeningScreen.vue") },
     { path: "/home", component: () => import("../views/HomeView.vue") },
+    { path: "/play", component: () => import("../views/PlayView.vue") },
   ],
 });

@@ -1,0 +1,42 @@
+{
+  "level": 1,
+  "bpm": 120,
+  "notes": [
+    {
+      "time": 2.113,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 2.728,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 3.704,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 4.389,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 5.155,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 7.198,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    }
+  ]
+}
