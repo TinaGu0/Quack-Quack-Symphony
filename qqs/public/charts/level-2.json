@@ -1,0 +1,254 @@
+{
+  "level": 2,
+  "bpm": 123.98,
+  "startTime": 40,
+  "duration": 30,
+  "notes": [
+    {
+      "time": 2.357,
+      "lane": 0,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 2.844,
+      "lane": 1,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 3.332,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 3.808,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 4.296,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 4.783,
+      "lane": 5,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 5.503,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 5.991,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 6.473,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 6.955,
+      "lane": 1,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 7.436,
+      "lane": 0,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 8.162,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 8.887,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 9.613,
+      "lane": 1,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 10.345,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 11.064,
+      "lane": 0,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 11.79,
+      "lane": 5,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 12.516,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 13.247,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 14.228,
+      "lane": 1,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 14.942,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 15.662,
+      "lane": 0,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 16.393,
+      "lane": 5,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 17.113,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 17.845,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 18.565,
+      "lane": 1,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 19.296,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 20.015,
+      "lane": 0,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 20.747,
+      "lane": 5,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 21.467,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 22.198,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 22.924,
+      "lane": 1,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 23.65,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 24.375,
+      "lane": 0,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 25.101,
+      "lane": 5,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 25.826,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 26.552,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 27.272,
+      "lane": 1,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 28.003,
+      "lane": 4,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 28.967,
+      "lane": 2,
+      "type": "tap",
+      "duration": 0
+    },
+    {
+      "time": 29.466,
+      "lane": 3,
+      "type": "tap",
+      "duration": 0
+    }
+  ]
+}

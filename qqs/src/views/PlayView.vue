@@ -1,33 +1,17 @@
 <template>
   <main class="game">
-    <h1>🪿 Quack Quack Symphony</h1>
+    <h1>Quack Quack Symphony</h1>
+    <button v-if="!started" @click="startLevel(1)">Start Battle</button>
 
-    <section v-if="screen === 'levels'">
-      <h2>Choose a Level</h2>
-
-      <div class="levels">
-        <button
-          v-for="level in 9"
-          :key="level"
-          :disabled="level > unlocked"
-          @click="startLevel(level)"
-        >
-          Level {{ level }}
-          {{ level > unlocked ? "🔒" : "🪿" }}
-        </button>
-      </div>
-    </section>
-
-    <section v-else>
+    <section>
       <div class="stats">
         <span>Level {{ currentLevel }}</span>
         <span>Score: {{ score }}</span>
         <span>Combo: {{ combo }}</span>
+        <span>{{ "❤️".repeat(hearts) }}{{ "🖤".repeat(3 - hearts) }}</span>
       </div>
 
       <div class="sky">
-        <div class="goose" :class="{ flap: flapping }">🪿</div>
-
         <div class="lanes">
           <div
             v-for="(key, lane) in keys"
@@ -58,7 +42,7 @@
       <button @click="stopGame">Back</button>
 
       <div v-if="finished" class="results">
-        <h2>Flight Complete! 🪿</h2>
+        <h2>{{ hearts === 0 ? "Game Over 💔" : "Battle Complete!" }}</h2>
         <p>Score: {{ score }}</p>
         <p>Accuracy: {{ accuracy }}%</p>
         <button @click="stopGame">Continue</button>
@@ -69,6 +53,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 
 type Note = {
   id: number;
@@ -82,23 +67,23 @@ type Note = {
 
 const keys = ["a", "s", "d", "j", "k", "l"];
 
-const screen = ref<"levels" | "game">("levels");
 const currentLevel = ref(1);
-const unlocked = ref(Number(localStorage.getItem("unlocked") || 1));
 
 const notes = ref<Note[]>([]);
 const songTime = ref(0);
 const score = ref(0);
 const combo = ref(0);
+const hearts = ref(3);
 const hits = ref(0);
 const misses = ref(0);
 const message = ref("");
-const flapping = ref(false);
 const finished = ref(false);
+const started = ref(false);
+const startTime = ref(0);
+const levelDuration = ref(30);
 
 let audio: HTMLAudioElement | null = null;
 let animationId = 0;
-let flapTimer = 0;
 
 const hitWindow = 0.2;
 const travelTime = 2;
@@ -115,6 +100,7 @@ async function startLevel(level: number) {
   currentLevel.value = level;
   score.value = 0;
   combo.value = 0;
+  hearts.value = 3;
   hits.value = 0;
   misses.value = 0;
   songTime.value = 0;
@@ -127,6 +113,8 @@ async function startLevel(level: number) {
     if (!response.ok) throw new Error("Chart not found");
 
     const chart = await response.json();
+    startTime.value = chart.startTime ?? 0;
+    levelDuration.value = chart.duration ?? 30;
 
     notes.value = chart.notes.map(
       (note: Omit<Note, "id" | "done" | "holding">, id: number) => ({
@@ -140,15 +128,29 @@ async function startLevel(level: number) {
     if (!notes.value.length) throw new Error("No notes");
 
     audio = new Audio(`/music/level-${level}.mp3`);
+    audio.currentTime = startTime.value;
     await audio.play();
+    started.value = true;
 
-    screen.value = "game";
     animationId = requestAnimationFrame(update);
   } catch (error) {
     console.error(error);
     alert("Could not load the song or chart.");
     stopAudio();
-    screen.value = "levels";
+  }
+}
+
+//Miss notes, subtract heart
+function missNote() {
+  misses.value++;
+  combo.value = 0;
+  hearts.value--;
+  message.value = "MISS";
+
+  if (hearts.value <= 0) {
+    finished.value = true;
+    audio?.pause();
+    message.value = "GAME OVER";
   }
 }
 
@@ -156,7 +158,7 @@ async function startLevel(level: number) {
 function update() {
   if (!audio || finished.value) return;
 
-  songTime.value = audio.currentTime;
+  songTime.value = audio.currentTime - startTime.value;
 
   for (const note of notes.value) {
     if (note.done) continue;
@@ -167,13 +169,13 @@ function update() {
       }
     } else if (songTime.value > note.time + hitWindow) {
       note.done = true;
-      misses.value++;
-      combo.value = 0;
-      message.value = "MISS";
+      missNote();
+
+      if (finished.value) return;
     }
   }
 
-  if (notes.value.every((note) => note.done)) {
+  if (songTime.value >= levelDuration.value) {
     finishLevel();
     return;
   }
@@ -203,7 +205,7 @@ function notePosition(note: Note) {
 
 // Player presses a key
 function pressLane(lane: number) {
-  if (screen.value !== "game" || finished.value) return;
+  if (finished.value || !audio) return;
 
   const note = notes.value.find(
     (note) =>
@@ -217,7 +219,6 @@ function pressLane(lane: number) {
 
   if (note.type === "hold") {
     note.holding = true;
-    flapGoose();
     message.value = "HOLD";
   } else {
     hitNote(note);
@@ -226,6 +227,7 @@ function pressLane(lane: number) {
 
 // Player releases a key
 function releaseLane(lane: number) {
+  if (!audio || finished.value) return;
   const note = notes.value.find(
     (note) => note.lane === lane && note.holding && !note.done,
   );
@@ -237,9 +239,7 @@ function releaseLane(lane: number) {
   } else {
     note.done = true;
     note.holding = false;
-    misses.value++;
-    combo.value = 0;
-    message.value = "MISS";
+    missNote();
   }
 }
 
@@ -254,39 +254,27 @@ function hitNote(note: Note) {
 
   score.value += 100 + combo.value * 5;
   message.value = "PERFECT!";
-
-  flapGoose();
-}
-
-function flapGoose() {
-  flapping.value = true;
-  clearTimeout(flapTimer);
-
-  flapTimer = window.setTimeout(() => {
-    flapping.value = false;
-  }, 180);
 }
 
 // Complete level
 function finishLevel() {
   finished.value = true;
   audio?.pause();
-
-  if (accuracy.value >= 60 && currentLevel.value < 9) {
-    unlocked.value = Math.max(unlocked.value, currentLevel.value + 1);
-    localStorage.setItem("unlocked", String(unlocked.value));
-  }
 }
 
 function stopAudio() {
   cancelAnimationFrame(animationId);
   audio?.pause();
   audio = null;
+  started.value = false;
 }
+
+const router = useRouter();
 
 function stopGame() {
   stopAudio();
-  screen.value = "levels";
+  started.value = false;
+  router.push("/home");
 }
 
 function keyDown(event: KeyboardEvent) {
@@ -310,7 +298,6 @@ onUnmounted(() => {
   window.removeEventListener("keydown", keyDown);
   window.removeEventListener("keyup", keyUp);
   stopAudio();
-  clearTimeout(flapTimer);
 });
 </script>
 
@@ -362,18 +349,6 @@ button:disabled {
   overflow: hidden;
   border: 4px solid #548b99;
   background: linear-gradient(#87c5e6, #d7efcf);
-}
-
-.goose {
-  position: absolute;
-  top: 50px;
-  left: 45%;
-  font-size: 65px;
-  transition: transform 0.15s;
-}
-
-.goose.flap {
-  transform: translateY(-25px) rotate(-15deg);
 }
 
 .lanes {
