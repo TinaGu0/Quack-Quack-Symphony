@@ -64,7 +64,12 @@
         <button @click="startLevel(currentLevel)">Start Battle</button>
       </div>
 
-      <div v-if="finished" class="overlay">
+      <div v-if="finished && currentLevel === 9" class="ending-screen">
+        <img src="/ending/ending.png" alt="Thank you for playing!" />
+        <button class="ending-back" @click="goMap">← Level Map</button>
+      </div>
+
+      <div v-else-if="finished" class="overlay">
         <h1>Battle Complete!</h1>
 
         <h2>{{ accuracy }}% Accuracy</h2>
@@ -459,6 +464,8 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.92);
   color: #487491;
   cursor: pointer;
+  font-family: "Lilita One", system-ui, sans-serif;
+  font-size: 1rem;
 }
 
 .field {
@@ -601,5 +608,36 @@ onUnmounted(() => {
   gap: 16px;
   text-align: center;
   padding: 25px;
+}
+
+.ending-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: #b9d778;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ending-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ending-back {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #487491;
+  font-family: "Lilita One", system-ui, sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
 }
 </style>

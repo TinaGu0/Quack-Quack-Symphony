@@ -94,25 +94,6 @@ onActivated(refresh);
   image-rendering: pixelated;
 }
 
-.topbar {
-  max-width: 760px;
-  margin: 14px auto 8px;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.topbar button {
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #487491;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
 .back-button {
   position: absolute;
   top: 16px;
@@ -123,24 +104,9 @@ onActivated(refresh);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.9);
   color: #487491;
-  font-family: monospace;
+  font-family: "Lilita One", system-ui, sans-serif;
+  font-size: 1rem;
   cursor: pointer;
-}
-
-.title-wrap {
-  flex: 1;
-  text-align: center;
-}
-
-.title-wrap h1 {
-  margin: 0;
-  font-size: 1.5rem;
-}
-
-.title-wrap p {
-  margin: 4px 0 0;
-  font-size: 0.9rem;
-  color: #dbe9ef;
 }
 
 .node {
@@ -152,8 +118,8 @@ onActivated(refresh);
   box-sizing: border-box;
   z-index: 2;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  font-family: monospace;
-  font-weight: bold;
+  font-family: "Lilita One", system-ui, sans-serif;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -168,7 +134,7 @@ onActivated(refresh);
   width: auto;
   height: auto;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.94);
   color: #487491;
   white-space: nowrap;
