@@ -1,7 +1,7 @@
-<script setup lang="ts">
-import PlayView from './components/PlayView.vue'
-</script>
-
 <template>
-  <PlayView />
+  <RouterView />
 </template>
+
+<script setup lang="ts">
+
+</script>

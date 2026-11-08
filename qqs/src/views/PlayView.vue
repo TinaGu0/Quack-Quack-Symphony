@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import BackgroundView from "./BackgroundView.vue";
+import BackgroundView from "../components/BackgroundView.vue";
 
 const LANES = 6;
 const KEYS = ["a", "s", "d", "j", "k", "l"];
