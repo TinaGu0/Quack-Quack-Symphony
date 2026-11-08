@@ -83,7 +83,6 @@ const notes = ref<{ id: number; lane: number }[]>([]);
 const jumps = ref<number[]>(Array(LANES).fill(0));
 const judge = ref<{ text: Judgment; n: number } | null>(null);
 const bg = ref<InstanceType<typeof BackgroundView>>();
-let count = 0;
 let nextId = 0;
 let judgeCount = 0;
 const timers: number[] = [];
