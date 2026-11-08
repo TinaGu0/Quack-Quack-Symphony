@@ -16,11 +16,11 @@ import { useRouter } from "vue-router";
 import AreaMap from "../components/AreaMap.vue";
 import { AREA, LOCATIONS, type Choice } from "../areas";
 import Notifications from "../components/NotificationsPanel.vue";
+import { tutorial } from "../areas";
 
-const MESSAGES = [
-  "Welcome! It's been getting cold lately, so lets help our feathered friend get to warmer weather.",
-  "Make your way to the other house to begin your journey.",
-];
+const MESSAGES = tutorial.done
+  ? ["Now you're ready to take your first flight!"]
+  : ["It's been cold lately, so lets help our feathered friend get to warmer weather!", "Walk to the other house start your journey. (wasd)"];
 
 const router = useRouter();
 const near = ref<string | null>(null);

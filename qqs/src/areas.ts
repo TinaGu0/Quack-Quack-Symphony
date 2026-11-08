@@ -20,7 +20,7 @@ export const AREA: Area = {
   solid: ["water", "houses", "trees"],
 };
 
-export type Choice = { label: string; to?: string };
+export type Choice = { label: string; to?: string; requiresTutorial?: boolean };
 export type Location = { id: string; choices: Choice[] };
 
 export const LOCATIONS: Location[] = [
@@ -30,6 +30,16 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: "tutorial",
-    choices: [{ label: "Your First Flight", to: "/tutorial" }],
+    choices: [{ label: "Tutorial", to: "/tutorial" }, { label: "Take flight", to: "/play", requiresTutorial: true },],
   },
 ];
+
+const KEY = "qqs-tutorial-done";
+export const tutorial = {
+  get done() {
+    return localStorage.getItem(KEY) === "1";
+  },
+  finish() {
+    localStorage.setItem(KEY, "1");
+  },
+};
