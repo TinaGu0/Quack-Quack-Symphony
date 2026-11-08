@@ -1,59 +1,94 @@
 <template>
-  <main class="game">
-    <h1>Quack Quack Symphony</h1>
-    <button v-if="!started" @click="startLevel(1)">Start Battle</button>
+  <main class="play">
+    <header class="hud">
+      <button @click="goMap">← Map</button>
+      <span>Level {{ currentLevel }}</span>
+      <span>Score: {{ score }}</span>
+      <span>Combo: {{ combo }}</span>
+    </header>
 
-    <section>
-      <div class="stats">
-        <span>Level {{ currentLevel }}</span>
-        <span>Score: {{ score }}</span>
-        <span>Combo: {{ combo }}</span>
-        <span>{{ "❤️".repeat(hearts) }}{{ "🖤".repeat(3 - hearts) }}</span>
-      </div>
+    <div class="field">
+      <BackgroundView :lanes="LANES" />
 
-      <div class="sky">
-        <div class="lanes">
+      <div class="lanes">
+        <div
+          v-for="(key, lane) in KEYS"
+          :key="key"
+          class="lane"
+          @pointerdown.prevent="pressLane(lane)"
+          @pointerup.prevent="releaseLane(lane)"
+          @pointercancel="releaseLane(lane)"
+        >
           <div
-            v-for="(key, lane) in keys"
-            :key="key"
-            class="lane"
-            @pointerdown="pressLane(lane)"
-            @pointerup="releaseLane(lane)"
+            v-for="note in visibleNotes(lane)"
+            :key="note.id"
+            class="note"
+            :class="{
+              hold: note.type === 'hold',
+              holding: note.holding,
+            }"
+            :style="notePosition(note)"
           >
-            <div
-              v-for="note in visibleNotes(lane)"
-              :key="note.id"
-              class="note"
-              :class="note.type"
-              :style="notePosition(note)"
-            >
-              {{ note.type === "hold" ? "▬" : "♪" }}
-            </div>
-
-            <span class="key">{{ key.toUpperCase() }}</span>
+            {{ note.type === "hold" ? "▬" : "♪" }}
           </div>
+
+          <span class="keycap">{{ key.toUpperCase() }}</span>
         </div>
-
-        <div class="hitline"></div>
-        <h2 class="judgment">{{ message }}</h2>
       </div>
 
-      <p>Use A S D J K L to tap or hold notes!</p>
-      <button @click="stopGame">Back</button>
+      <div class="hitline"></div>
 
-      <div v-if="finished" class="results">
-        <h2>{{ hearts === 0 ? "Game Over 💔" : "Battle Complete!" }}</h2>
+      <img
+        v-for="(j, lane) in jumps"
+        :key="`${lane}-${j}`"
+        class="bird"
+        :class="{ jump: j > 0 }"
+        :style="{
+          left: `${(lane * 100) / LANES}%`,
+          width: `${100 / LANES}%`,
+        }"
+        src="/rhythm_bg/flying.png"
+        alt=""
+      />
+
+      <div
+        v-if="message"
+        :key="messageKey"
+        class="judge"
+        :class="{ good: message === 'GOOD!' }"
+      >
+        {{ message }}
+      </div>
+
+      <div v-if="!started && !finished" class="overlay">
+        <h1>Level {{ currentLevel }}</h1>
+        <p>Use A S D J K L to tap or hold notes.</p>
+        <button @click="startLevel(currentLevel)">Start Battle</button>
+      </div>
+
+      <div v-if="finished" class="overlay">
+        <h1>Battle Complete!</h1>
+
+        <h2>{{ accuracy }}% Accuracy</h2>
+        <p>{{ accuracyRating }}</p>
+
         <p>Score: {{ score }}</p>
-        <p>Accuracy: {{ accuracy }}%</p>
-        <button @click="stopGame">Continue</button>
+        <p>Perfect: {{ hits }} | Missed: {{ misses }}</p>
+
+        <button @click="goMap">Level Map</button>
+        <button @click="startLevel(currentLevel)">Retry</button>
       </div>
-    </section>
+    </div>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
+
+import { useRoute, useRouter } from "vue-router";
+import BackgroundView from "../components/BackgroundView.vue";
+
+import { isLevelUnlocked, markLevelComplete } from "../utils/levelProgress";
 
 type Note = {
   id: number;
@@ -65,54 +100,96 @@ type Note = {
   holding: boolean;
 };
 
-const keys = ["a", "s", "d", "j", "k", "l"];
+const LANES = 6;
+const KEYS = ["a", "s", "d", "j", "k", "l"];
 
-const currentLevel = ref(1);
+const router = useRouter();
+const route = useRoute();
+
+const requested = Number(route.query.level ?? 1);
+
+const currentLevel = ref(
+  Number.isInteger(requested) && requested >= 1 && requested <= 9
+    ? requested
+    : 1,
+);
 
 const notes = ref<Note[]>([]);
 const songTime = ref(0);
 const score = ref(0);
 const combo = ref(0);
-const hearts = ref(3);
 const hits = ref(0);
 const misses = ref(0);
-const message = ref("");
-const finished = ref(false);
+
 const started = ref(false);
+const finished = ref(false);
+
+const message = ref("");
+const messageKey = ref(0);
+
+const jumps = ref<number[]>(Array(LANES).fill(0));
+
 const startTime = ref(0);
 const levelDuration = ref(30);
+
+const perfectWindow = 0.1;
+const goodWindow = 0.25;
+const hitWindow = goodWindow;
+const travelTime = 2;
 
 let audio: HTMLAudioElement | null = null;
 let animationId = 0;
 
-const hitWindow = 0.2;
-const travelTime = 2;
-
 const accuracy = computed(() => {
   const total = hits.value + misses.value;
+
   return total ? Math.round((hits.value / total) * 100) : 0;
 });
 
-// Load the generated chart and start music
+function showMessage(text: string) {
+  message.value = text;
+  messageKey.value++;
+}
+
+function stopAudio() {
+  cancelAnimationFrame(animationId);
+  audio?.pause();
+  audio = null;
+  started.value = false;
+}
+
+function goMap() {
+  stopAudio();
+  router.push("/levels");
+}
+
 async function startLevel(level: number) {
+  if (!isLevelUnlocked(level)) {
+    router.push("/levels");
+    return;
+  }
+
   stopAudio();
 
   currentLevel.value = level;
   score.value = 0;
   combo.value = 0;
-  hearts.value = 3;
   hits.value = 0;
   misses.value = 0;
   songTime.value = 0;
   finished.value = false;
   message.value = "";
+  jumps.value = Array(LANES).fill(0);
 
   try {
     const response = await fetch(`/charts/level-${level}.json`);
 
-    if (!response.ok) throw new Error("Chart not found");
+    if (!response.ok) {
+      throw new Error(`Missing chart for level ${level}`);
+    }
 
     const chart = await response.json();
+
     startTime.value = chart.startTime ?? 0;
     levelDuration.value = chart.duration ?? 30;
 
@@ -125,38 +202,82 @@ async function startLevel(level: number) {
       }),
     );
 
-    if (!notes.value.length) throw new Error("No notes");
+    if (!notes.value.length) {
+      throw new Error("No notes in chart");
+    }
 
-    audio = new Audio(`/music/level-${level}.mp3`);
-    audio.currentTime = startTime.value;
-    await audio.play();
+    const player = new Audio(`/music/level-${level}.mp3`);
+    audio = player;
+
+    if (player.readyState < 1) {
+      await new Promise<void>((resolve, reject) => {
+        player.addEventListener("loadedmetadata", () => resolve(), {
+          once: true,
+        });
+
+        player.addEventListener(
+          "error",
+          () => reject(new Error("Could not load MP3")),
+          { once: true },
+        );
+      });
+    }
+
+    player.currentTime = startTime.value;
+
+    if (player.seeking) {
+      await new Promise<void>((resolve) => {
+        player.addEventListener("seeked", () => resolve(), {
+          once: true,
+        });
+      });
+    }
+
+    if (audio !== player) return;
+
+    await player.play();
+
     started.value = true;
-
     animationId = requestAnimationFrame(update);
   } catch (error) {
     console.error(error);
-    alert("Could not load the song or chart.");
     stopAudio();
+    alert("Could not load the song or chart.");
   }
 }
 
-//Miss notes, subtract heart
 function missNote() {
   misses.value++;
   combo.value = 0;
-  hearts.value--;
-  message.value = "MISS";
-
-  if (hearts.value <= 0) {
-    finished.value = true;
-    audio?.pause();
-    message.value = "GAME OVER";
-  }
+  showMessage("MISS");
 }
 
-// Update note timing
+const accuracyRating = computed(() => {
+  if (accuracy.value === 100) return "PERFECT!";
+  if (accuracy.value >= 90) return "AMAZING!";
+  if (accuracy.value >= 75) return "GREAT!";
+  if (accuracy.value >= 50) return "GOOD!";
+  return "KEEP PRACTICING!";
+});
+
+function hitNote(note: Note, judgment: "PERFECT!" | "GOOD!") {
+  if (note.done) return;
+
+  note.done = true;
+  note.holding = false;
+
+  hits.value++;
+  combo.value++;
+
+  score.value += judgment === "PERFECT!" ? 100 : 50;
+
+  jumps.value[note.lane]++;
+
+  showMessage(judgment);
+}
+
 function update() {
-  if (!audio || finished.value) return;
+  if (!audio || finished.value || !started.value) return;
 
   songTime.value = audio.currentTime - startTime.value;
 
@@ -165,7 +286,7 @@ function update() {
 
     if (note.holding) {
       if (songTime.value >= note.time + note.duration) {
-        hitNote(note);
+        hitNote(note, "PERFECT!");
       }
     } else if (songTime.value > note.time + hitWindow) {
       note.done = true;
@@ -176,14 +297,16 @@ function update() {
   }
 
   if (songTime.value >= levelDuration.value) {
-    finishLevel();
+    finished.value = true;
+    audio.pause();
+
+    markLevelComplete(currentLevel.value);
     return;
   }
 
   animationId = requestAnimationFrame(update);
 }
 
-// Get approaching notes
 function visibleNotes(lane: number) {
   return notes.value.filter(
     (note) =>
@@ -194,7 +317,6 @@ function visibleNotes(lane: number) {
   );
 }
 
-// Move notes toward the hit line
 function notePosition(note: Note) {
   const remaining = note.time - songTime.value;
 
@@ -203,31 +325,36 @@ function notePosition(note: Note) {
   };
 }
 
-// Player presses a key
 function pressLane(lane: number) {
-  if (finished.value || !audio) return;
+  if (!started.value || finished.value || !audio) return;
+
+  songTime.value = audio.currentTime - startTime.value;
 
   const note = notes.value.find(
     (note) =>
       note.lane === lane &&
       !note.done &&
       !note.holding &&
-      Math.abs(note.time - songTime.value) <= hitWindow,
+      Math.abs(note.time - songTime.value) <= goodWindow,
   );
 
   if (!note) return;
 
+  const difference = Math.abs(note.time - songTime.value);
+
   if (note.type === "hold") {
     note.holding = true;
-    message.value = "HOLD";
+    showMessage("HOLD");
   } else {
-    hitNote(note);
+    hitNote(note, difference <= perfectWindow ? "PERFECT!" : "GOOD!");
   }
 }
 
-// Player releases a key
 function releaseLane(lane: number) {
   if (!audio || finished.value) return;
+
+  songTime.value = audio.currentTime - startTime.value;
+
   const note = notes.value.find(
     (note) => note.lane === lane && note.holding && !note.done,
   );
@@ -235,7 +362,7 @@ function releaseLane(lane: number) {
   if (!note) return;
 
   if (songTime.value >= note.time + note.duration - 0.1) {
-    hitNote(note);
+    hitNote(note, "PERFECT!");
   } else {
     note.done = true;
     note.holding = false;
@@ -243,55 +370,27 @@ function releaseLane(lane: number) {
   }
 }
 
-// Successful hit
-function hitNote(note: Note) {
-  if (note.done) return;
-
-  note.done = true;
-  note.holding = false;
-  hits.value++;
-  combo.value++;
-
-  score.value += 100 + combo.value * 5;
-  message.value = "PERFECT!";
-}
-
-// Complete level
-function finishLevel() {
-  finished.value = true;
-  audio?.pause();
-}
-
-function stopAudio() {
-  cancelAnimationFrame(animationId);
-  audio?.pause();
-  audio = null;
-  started.value = false;
-}
-
-const router = useRouter();
-
-function stopGame() {
-  stopAudio();
-  started.value = false;
-  router.push("/home");
-}
-
 function keyDown(event: KeyboardEvent) {
   if (event.repeat) return;
 
-  const lane = keys.indexOf(event.key.toLowerCase());
+  const lane = KEYS.indexOf(event.key.toLowerCase());
+
   if (lane !== -1) pressLane(lane);
 }
 
 function keyUp(event: KeyboardEvent) {
-  const lane = keys.indexOf(event.key.toLowerCase());
+  const lane = KEYS.indexOf(event.key.toLowerCase());
+
   if (lane !== -1) releaseLane(lane);
 }
 
 onMounted(() => {
   window.addEventListener("keydown", keyDown);
   window.addEventListener("keyup", keyUp);
+
+  if (!isLevelUnlocked(currentLevel.value)) {
+    router.replace("/levels");
+  }
 });
 
 onUnmounted(() => {
@@ -302,53 +401,47 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.game {
-  min-height: 100vh;
-  padding: 25px;
-  text-align: center;
-  font-family: monospace;
-  color: #36566a;
-  background: linear-gradient(#a6daed, #e2efd5);
+.play {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: white;
 }
 
-.levels {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  max-width: 600px;
-  margin: 30px auto;
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px;
+  background: #203e47dd;
+  font-size: 12px;
 }
 
-button {
-  padding: 15px;
-  border: 2px solid #548b99;
+.hud button,
+.overlay button {
+  padding: 9px 14px;
+  border: 0;
   border-radius: 10px;
-  background: #fff8e8;
+  background: rgba(255, 255, 255, 0.92);
+  color: #487491;
   cursor: pointer;
 }
 
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.stats {
-  max-width: 480px;
-  margin: auto;
-  padding: 15px;
-  display: flex;
-  justify-content: space-around;
-  background: #fff8e8;
-}
-
-.sky {
+.field {
   position: relative;
-  max-width: 480px;
-  height: 540px;
-  margin: auto;
+  width: min(100%, 480px);
+  height: 100dvh;
+  margin: 0 auto;
   overflow: hidden;
-  border: 4px solid #548b99;
-  background: linear-gradient(#87c5e6, #d7efcf);
+  background: #000 url("/rhythm_bg/sky.png") center / cover no-repeat;
+  touch-action: none;
 }
 
 .lanes {
@@ -356,69 +449,129 @@ button:disabled {
   inset: 0;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  z-index: 1;
 }
 
 .lane {
   position: relative;
-  border-right: 1px solid #ffffff90;
+  border-right: 1px solid #ffffff50;
+  touch-action: none;
 }
 
 .note {
   position: absolute;
-  left: 10%;
-  width: 80%;
-  height: 30px;
-  display: grid;
-  place-items: center;
+  left: 8%;
+  width: 84%;
+  height: 32px;
   border: 2px solid white;
   border-radius: 8px;
-  background: #ffdc83;
-  font-size: 20px;
+  background: #6bd6ff;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  pointer-events: none;
 }
 
 .note.hold {
   height: 55px;
-  background: #9ae1b5;
+  background: #a7e9af;
+  color: #224f47;
+}
+
+.note.holding {
+  background: #ffe48c;
 }
 
 .hitline {
   position: absolute;
   top: 80%;
-  width: 100%;
+  left: 0;
+  right: 0;
   height: 4px;
   background: white;
+  z-index: 2;
   pointer-events: none;
 }
 
-.key {
+.keycap {
   position: absolute;
   top: 85%;
   left: 50%;
   transform: translateX(-50%);
-  padding: 6px;
-  border-radius: 5px;
-  color: white;
-  background: #548b99;
-}
-
-.judgment {
-  position: absolute;
-  top: 40%;
-  width: 100%;
-  color: #fff4a3;
-  text-shadow: 2px 2px #548b99;
+  font-size: 1.4rem;
+  z-index: 4;
   pointer-events: none;
 }
 
-.results {
-  position: fixed;
+.bird {
+  position: absolute;
+  bottom: 20%;
+  margin-bottom: -40px;
+  height: auto;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.bird.jump {
+  animation: hop 0.25s ease-out;
+}
+
+@keyframes hop {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-24px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.judge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7%;
+  text-align: center;
+  font-size: 2rem;
+  text-transform: uppercase;
+  color: #ffe286;
+  z-index: 4;
+  pointer-events: none;
+  animation: pop 0.25s ease-out;
+}
+
+.judge {
+  color: #ffe286;
+}
+
+.judge.good {
+  color: #6bd6ff;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.overlay {
+  position: absolute;
   inset: 0;
-  z-index: 10;
+  background: #183c4dd9;
+  z-index: 6;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  color: white;
-  background: #315c70ee;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 25px;
 }
 </style>

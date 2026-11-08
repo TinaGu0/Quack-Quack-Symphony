@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { setupTransition } from "../transition.ts";
+import { setupTransition } from "../transition";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -7,6 +7,8 @@ export const router = createRouter({
     { path: "/", component: () => import("../components/OpeningScreen.vue") },
     { path: "/home", component: () => import("../views/HomeView.vue") },
     { path: "/play", component: () => import("../views/PlayView.vue") },
+    { path: "/tutorial", component: () => import("../views/TutorialView.vue") },
+    { path: "/levels", component: () => import("../views/LevelMapView.vue") },
   ],
 });
 
