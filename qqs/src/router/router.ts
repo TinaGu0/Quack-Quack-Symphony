@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { setupTransition } from "../transition.ts";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -7,3 +8,5 @@ export const router = createRouter({
     { path: "/home", component: () => import("../views/HomeView.vue") },
   ],
 });
+
+setupTransition(router);
