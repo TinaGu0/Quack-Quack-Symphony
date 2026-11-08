@@ -28,7 +28,10 @@
         :key="n.id"
         :data-id="n.id"
         class="note"
-        :style="{ left: n.lane * (100 / LANES) + '%', width: 100 / LANES + '%' }"
+        :style="{
+          left: n.lane * (100 / LANES) + '%',
+          width: 100 / LANES + '%',
+        }"
         @pointerdown="tryHit(n.id)"
         @animationend="missed(n.id)"
       />
@@ -90,7 +93,7 @@ onMounted(() => {
     timers.push(
       window.setTimeout(() => {
         notes.value.push({ id: nextId++, lane: c.lane });
-      }, START + c.t)
+      }, START + c.t),
     );
   });
   const end = START + CHART[CHART.length - 1].t + FALL_MS + 1500;
@@ -98,7 +101,7 @@ onMounted(() => {
     window.setTimeout(() => {
       tutorial.finish();
       router.push("/home");
-    }, end)
+    }, end),
   );
   window.addEventListener("keydown", onKey);
 });
@@ -142,6 +145,8 @@ function tryHit(id: number) {
 }
 
 function missed(id: number) {
+  if (!notes.value.some((n) => n.id === id)) return;
+
   show("miss");
   remove(id);
 }
@@ -178,9 +183,15 @@ function remove(id: number) {
   animation: hop 0.25s ease-out;
 }
 @keyframes hop {
-  0%   { transform: translateY(0); }
-  40%  { transform: translateY(-24px); }
-  100% { transform: translateY(0); }
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-24px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 .keycap {
   position: absolute;
@@ -203,12 +214,24 @@ function remove(id: number) {
   pointer-events: none;
   animation: pop 0.25s ease-out;
 }
-.judge.perfect { color: #ffd66b; }
-.judge.good { color: #6bd6ff; }
-.judge.miss { color: #ff6b6b; }
+.judge.perfect {
+  color: #ffd66b;
+}
+.judge.good {
+  color: #6bd6ff;
+}
+.judge.miss {
+  color: #ff6b6b;
+}
 @keyframes pop {
-  from { transform: scale(0.7); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 .note {
   position: absolute;
@@ -220,7 +243,11 @@ function remove(id: number) {
   animation: fall 2s linear forwards;
 }
 @keyframes fall {
-  from { transform: translateY(-60px); }
-  to   { transform: translateY(100vh); }
+  from {
+    transform: translateY(-60px);
+  }
+  to {
+    transform: translateY(100vh);
+  }
 }
 </style>

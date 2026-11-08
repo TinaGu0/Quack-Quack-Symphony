@@ -20,19 +20,32 @@ import { tutorial } from "../areas";
 
 const MESSAGES = tutorial.done
   ? ["Now you're ready to take your first flight!"]
-  : ["It's been cold lately, so lets help our feathered friend get to warmer weather!", "Walk to the other house start your journey. (wasd)"];
+  : [
+      "It's been cold lately, so lets help our feathered friend get to warmer weather!",
+      "Walk to the other house start your journey. (wasd)",
+    ];
 
 const router = useRouter();
 const near = ref<string | null>(null);
 const location = computed(() => LOCATIONS.find((l) => l.id === near.value));
 
 function choose(c: Choice) {
-  if (c.to) router.push(c.to);
+  if (!c.to) return;
+
+  if (c.requiresTutorial && !tutorial.done) {
+    router.push("/tutorial");
+    return;
+  }
+
+  router.push(c.to === "/play" ? "/levels" : c.to);
 }
 </script>
 
 <style scoped>
-.home { position: fixed; inset: 0; }
+.home {
+  position: fixed;
+  inset: 0;
+}
 .menu {
   position: absolute;
   bottom: 5%;
