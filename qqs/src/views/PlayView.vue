@@ -28,9 +28,7 @@
               holding: note.holding,
             }"
             :style="notePosition(note)"
-          >
-            {{ note.type === "hold" ? "▬" : "♪" }}
-          </div>
+          ></div>
 
           <span class="keycap">{{ key.toUpperCase() }}</span>
         </div>
@@ -137,6 +135,34 @@ const goodWindow = 0.25;
 const hitWindow = goodWindow;
 const travelTime = 2;
 
+const noteLimits: Record<number, number> = {
+  1: 35,
+  2: 45,
+  3: 50,
+  4: 60,
+  5: 55,
+  6: 60,
+  7: 65,
+  8: 70,
+  9: 75,
+};
+
+function simplifyChart(chartNotes: any[], level: number) {
+  const limit = noteLimits[level] ?? chartNotes.length;
+
+  if (chartNotes.length <= limit) return chartNotes;
+
+  const result = [];
+
+  for (let i = 0; i < limit; i++) {
+    const index = Math.floor((i * chartNotes.length) / limit);
+
+    result.push(chartNotes[index]);
+  }
+
+  return result;
+}
+
 let audio: HTMLAudioElement | null = null;
 let animationId = 0;
 
@@ -193,7 +219,7 @@ async function startLevel(level: number) {
     startTime.value = chart.startTime ?? 0;
     levelDuration.value = chart.duration ?? 30;
 
-    notes.value = chart.notes.map(
+    notes.value = simplifyChart(chart.notes, level).map(
       (note: Omit<Note, "id" | "done" | "holding">, id: number) => ({
         ...note,
         id,
@@ -312,8 +338,9 @@ function visibleNotes(lane: number) {
     (note) =>
       note.lane === lane &&
       !note.done &&
-      note.time >= songTime.value - hitWindow &&
-      note.time <= songTime.value + travelTime,
+      (note.holding ||
+        (note.time >= songTime.value - hitWindow &&
+          note.time <= songTime.value + travelTime)),
   );
 }
 
@@ -375,7 +402,10 @@ function keyDown(event: KeyboardEvent) {
 
   const lane = KEYS.indexOf(event.key.toLowerCase());
 
-  if (lane !== -1) pressLane(lane);
+  if (lane !== -1) {
+    console.log("Key pressed:", event.key);
+    pressLane(lane);
+  }
 }
 
 function keyUp(event: KeyboardEvent) {
@@ -460,26 +490,27 @@ onUnmounted(() => {
 
 .note {
   position: absolute;
-  left: 8%;
-  width: 84%;
-  height: 32px;
-  border: 2px solid white;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  border: 0;
   border-radius: 8px;
   background: #6bd6ff;
-  display: grid;
-  place-items: center;
-  font-size: 19px;
   pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .note.hold {
-  height: 55px;
-  background: #a7e9af;
-  color: #224f47;
+  height: 150px;
+  background: #ffe48c;
+  border: 2px solid #ffffff;
+  box-sizing: border-box;
 }
 
 .note.holding {
-  background: #ffe48c;
+  background: #ffbb54;
+  border: 3px solid #ffffff;
+  box-sizing: border-box;
 }
 
 .hitline {

@@ -2,10 +2,13 @@
   <div class="home">
     <AreaMap :area="AREA" @near="near = $event" />
     <Notifications :messages="MESSAGES" />
+
     <div v-if="location" class="menu">
-      <button v-for="c in location.choices" :key="c.label" @click="choose(c)">
-        {{ c.label }}
-      </button>
+      <template v-for="c in location.choices" :key="c.label">
+        <button v-if="!c.requiresTutorial || tutorial.done" @click="choose(c)">
+          {{ c.label }}
+        </button>
+      </template>
     </div>
   </div>
 </template>
