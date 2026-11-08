@@ -82,11 +82,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-
 import { useRoute, useRouter } from "vue-router";
 import BackgroundView from "../components/BackgroundView.vue";
-
 import { isLevelUnlocked, markLevelComplete } from "../utils/levelProgress";
+
+const router = useRouter();
+const route = useRoute();
 
 type Note = {
   id: number;
@@ -100,9 +101,6 @@ type Note = {
 
 const LANES = 6;
 const KEYS = ["a", "s", "d", "j", "k", "l"];
-
-const router = useRouter();
-const route = useRoute();
 
 const requested = Number(route.query.level ?? 1);
 
@@ -418,9 +416,8 @@ onMounted(() => {
   window.addEventListener("keydown", keyDown);
   window.addEventListener("keyup", keyUp);
 
-  if (!isLevelUnlocked(currentLevel.value)) {
-    router.replace("/levels");
-  }
+  const selectedLevel = Number(route.query.level || 1);
+  currentLevel.value = selectedLevel;
 });
 
 onUnmounted(() => {

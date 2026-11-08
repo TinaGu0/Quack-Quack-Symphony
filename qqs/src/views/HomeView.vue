@@ -3,12 +3,10 @@
     <AreaMap :area="AREA" @near="near = $event" />
     <Notifications :messages="MESSAGES" />
 
-    <div v-if="location" class="menu">
-      <template v-for="c in location.choices" :key="c.label">
-        <button v-if="!c.requiresTutorial || tutorial.done" @click="choose(c)">
-          {{ c.label }}
-        </button>
-      </template>
+    <div v-if="location?.id === 'tutorial'" class="menu">
+      <button @click="handleDoor">
+        {{ tutorial.done ? "Take Flight" : "Tutorial" }}
+      </button>
     </div>
   </div>
 </template>
@@ -17,9 +15,8 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import AreaMap from "../components/AreaMap.vue";
-import { AREA, LOCATIONS, type Choice } from "../areas";
+import { AREA, LOCATIONS, tutorial } from "../areas";
 import Notifications from "../components/NotificationsPanel.vue";
-import { tutorial } from "../areas";
 
 const MESSAGES = tutorial.done
   ? ["Now you're ready to take your first flight!"]
@@ -32,15 +29,15 @@ const router = useRouter();
 const near = ref<string | null>(null);
 const location = computed(() => LOCATIONS.find((l) => l.id === near.value));
 
-function choose(c: Choice) {
-  if (!c.to) return;
+function handleDoor() {
+  if (!location.value) return;
 
-  if (c.requiresTutorial && !tutorial.done) {
+  if (!tutorial.done) {
     router.push("/tutorial");
     return;
   }
 
-  router.push(c.to === "/play" ? "/levels" : c.to);
+  router.push("/levels");
 }
 </script>
 

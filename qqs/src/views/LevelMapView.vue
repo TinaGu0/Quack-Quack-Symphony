@@ -1,100 +1,51 @@
 <template>
   <main class="map-page">
-    <header class="topbar">
-      <button @click="router.push('/home')">← Back</button>
-
-      <div>
-        <h1>Choose Your Path</h1>
-        <p>Complete levels to unlock new paths.</p>
-      </div>
-
-      <button @click="router.push('/tutorial')">Tutorial</button>
-    </header>
-
-    <div class="map-panel">
-      <svg
-        class="paths"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <line
-          v-for="[from, to] in EDGES"
-          :key="`${from}-${to}`"
-          :x1="POSITIONS[from]!.x"
-          :y1="POSITIONS[from]!.y"
-          :x2="POSITIONS[to]!.x"
-          :y2="POSITIONS[to]!.y"
-          :class="{ lit: completed.includes(from) }"
-        />
-      </svg>
+    <div class="map-wrap">
+      <img class="map-image" src="/maps/map.png" alt="Map" />
+      <button class="back-button" @click="router.push('/home')">← Back</button>
+      <button class="node tutorial" @click="router.push('/tutorial')">
+        Tutorial
+      </button>
 
       <button
         v-for="level in LEVELS"
-        :key="level"
-        class="level-node"
+        :key="level.id"
+        class="node level-node"
         :class="{
-          locked: !unlocked(level),
-          complete: completed.includes(level),
-          final: level === 9,
+          locked: !unlocked(level.id),
+          complete: completed.includes(level.id),
+          final: level.id === 9,
         }"
         :style="{
-          left: POSITIONS[level]!.x + '%',
-          top: POSITIONS[level]!.y + '%',
+          left: level.x + '%',
+          top: level.y + '%',
         }"
-        :disabled="!unlocked(level)"
-        @click="playLevel(level)"
+        :disabled="!unlocked(level.id)"
+        @click="playLevel(level.id)"
       >
-        <span>
-          {{
-            !unlocked(level) ? "🔒" : completed.includes(level) ? "✓" : level
-          }}
-        </span>
-        <small>Lv {{ level }}</small>
+        {{ level.id }}
       </button>
     </div>
-
-    <p class="help">✓ Completed · 🔒 Locked · Choose any unlocked level</p>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onActivated } from "vue";
 import { useRouter } from "vue-router";
-
 import { getCompletedLevels, isLevelUnlocked } from "../utils/levelProgress";
 
 const router = useRouter();
 
-const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-const POSITIONS: Record<number, { x: number; y: number }> = {
-  1: { x: 50, y: 9 },
-
-  2: { x: 27, y: 27 },
-  3: { x: 73, y: 27 },
-
-  4: { x: 12, y: 48 },
-  5: { x: 37, y: 48 },
-  6: { x: 63, y: 48 },
-  7: { x: 88, y: 48 },
-
-  8: { x: 50, y: 73 },
-  9: { x: 50, y: 92 },
-};
-
-const EDGES: [number, number][] = [
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [2, 5],
-  [3, 6],
-  [3, 7],
-  [4, 8],
-  [5, 8],
-  [6, 8],
-  [7, 8],
-  [8, 9],
+const LEVELS = [
+  { id: 1, x: 38, y: 73.5 },
+  { id: 2, x: 66, y: 73.5 },
+  { id: 3, x: 18, y: 61.5 },
+  { id: 4, x: 38, y: 41.5 },
+  { id: 5, x: 66, y: 41.5 },
+  { id: 6, x: 82, y: 57.5 },
+  { id: 7, x: 18, y: 22 },
+  { id: 8, x: 82, y: 22 },
+  { id: 9, x: 50, y: 8 },
 ];
 
 const completed = ref<number[]>([]);
@@ -124,115 +75,131 @@ onActivated(refresh);
 .map-page {
   position: fixed;
   inset: 0;
-  overflow-y: auto;
-  padding: 16px;
-  box-sizing: border-box;
-  color: #36566a;
-  background: linear-gradient(#a6daed, #e2efd5);
-  font-family: monospace;
+  overflow: hidden;
+  background: #a6ded2;
+}
+
+.map-wrap {
+  position: relative;
+  width: min(100vw, 100dvh);
+  height: min(100vw, 100dvh);
+  margin: 0 auto;
+}
+
+.map-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .topbar {
-  max-width: 780px;
-  margin: auto;
+  max-width: 760px;
+  margin: 14px auto 8px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  text-align: center;
-}
-
-.topbar h1 {
-  margin: 0;
-  font-size: clamp(1.3rem, 4vw, 2rem);
-}
-
-.topbar p {
-  margin: 5px 0;
-  font-size: 0.85rem;
 }
 
 .topbar button {
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: 0;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.92);
   color: #487491;
+  font-size: 1rem;
   cursor: pointer;
 }
 
-.map-panel {
-  position: relative;
-  width: min(100%, 680px);
-  height: min(75dvh, 640px);
-  min-height: 410px;
-  margin: 20px auto 0;
-  border: 4px solid #548b99;
-  border-radius: 10px;
-  background: linear-gradient(#87c5e6, #d7efcf);
-  box-sizing: border-box;
-}
-
-.paths {
+.back-button {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #487491;
+  font-family: monospace;
+  cursor: pointer;
 }
 
-.paths line {
-  stroke: #548b99;
-  opacity: 0.45;
-  stroke-width: 1.2;
-  stroke-dasharray: 2.2 1.7;
+.title-wrap {
+  flex: 1;
+  text-align: center;
 }
 
-.paths line.lit {
-  stroke: #fff8e8;
-  opacity: 1;
-  stroke-width: 1.6;
+.title-wrap h1 {
+  margin: 0;
+  font-size: 1.5rem;
 }
 
-.level-node {
+.title-wrap p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #dbe9ef;
+}
+
+.node {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: clamp(42px, 10vw, 64px);
-  height: clamp(42px, 10vw, 64px);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 2px solid #548b99;
-  border-radius: 50%;
-  background: #fff8e8;
-  color: #36566a;
-  font-size: 1.2rem;
+  box-sizing: border-box;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  font-family: monospace;
   font-weight: bold;
   cursor: pointer;
-  z-index: 1;
 }
 
-.level-node small {
-  font-size: 0.65rem;
-}
-
-.level-node.complete {
-  background: #9ae1b5;
-}
-
-.level-node.final {
-  border-width: 4px;
-}
-
-.level-node.locked {
-  background: #bacdd1;
-  opacity: 0.85;
+.node:disabled {
   cursor: not-allowed;
 }
 
-.help {
+.tutorial {
+  left: 50%;
+  top: 92%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #487491;
+  white-space: nowrap;
   text-align: center;
-  font-size: 0.85rem;
+}
+
+.level-node {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #3d6177;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+}
+.level-node:hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.level-node.complete {
+  background: rgba(154, 225, 181, 0.82);
+  color: #2f5c45;
+}
+
+.level-node.locked {
+  background: rgba(255, 255, 255, 0.38);
+  color: rgba(61, 97, 119, 0.55);
+  cursor: not-allowed;
+}
+
+.level-node.final {
+  border: 2px solid #fff7c2;
 }
 </style>
