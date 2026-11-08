@@ -1,5 +1,14 @@
-# Vue 3 + TypeScript + Vite
+# Project Name / Title
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+This file contains the credits and acknowledgments for all external assets used for this project.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Art and Visuals
+
+Maps/Pixel Art 
+cupnooble - [Website](https://cupnooble.itch.io/)
+
+## Audio and Music
+
+## License and Usage
+
+Unless stated otherwise, all original assets belong to their respective creators listed above. Please check with individual artists before reusing their work.
