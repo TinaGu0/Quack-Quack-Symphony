@@ -1,8 +1,8 @@
 <template>
   <div class="home">
-    <AreaMap :key="area.id" :area="area" @near="near = $event" />
+    <AreaMap :area="AREA" @near="near = $event" />
 
-    <div v-if="near === 'name'" class="menu">
+    <div v-if="near === 'home'" class="menu">
       <button>Take flight</button>
       <button>Stay</button>
     </div>
@@ -14,21 +14,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import AreaMap from "../components/AreaMap.vue";
-import { AREAS, progress } from "../areas";
+import { AREA} from "../areas";
 
 const router = useRouter();
-const area = computed(() => AREAS.find((a) => a.id === progress.currentArea) ?? AREAS[0]);
 const near = ref<string | null>(null);
 </script>
 
 <style scoped>
-.home {
-  position: fixed;
-  inset: 0;
-}
+.home { position: fixed; inset: 0; }
 .menu {
   position: absolute;
   top: 50%;

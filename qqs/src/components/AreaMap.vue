@@ -29,25 +29,22 @@ class AreaScene extends Phaser.Scene {
   constructor() { super("Area"); }
 
   preload() {
-    const a = props.area;
-    this.load.tilemapTiledJSON("map", a.map);
-    a.tilesets.forEach((t) => this.load.image(t.name, `maps/${t.file}`));
+    this.load.tilemapTiledJSON("map", props.area.map);
+    props.area.tilesets.forEach((t) => this.load.image(t.name, `maps/${t.file}`));
     DIRS.forEach((d) =>
       FRAMES.forEach((f) => this.load.image(`${d}-${f}`, `goose/${d}/${f}.png`))
     );
   }
 
   create() {
-    const a = props.area;
     const map = this.make.tilemap({ key: "map" });
-    const sets = a.tilesets.map((t) => map.addTilesetImage(t.name, t.name)!);
+    const sets = props.area.tilesets.map((t) => map.addTilesetImage(t.name, t.name)!);
 
     const layers: Record<string, Phaser.Tilemaps.TilemapLayer> = {};
     map.layers.forEach((l) => {
       layers[l.name] = map.createLayer(l.name, sets) as Phaser.Tilemaps.TilemapLayer;
     });
 
-    // spawn point (object layer "spawn"), falls back to map center
     const sp = map.getObjectLayer("spawn")?.objects[0];
     this.goose = this.physics.add.sprite(
       sp?.x ?? map.widthInPixels / 2,
@@ -55,8 +52,7 @@ class AreaScene extends Phaser.Scene {
       "Front-idle"
     );
     this.goose.setScale(GOOSE.scale).setCollideWorldBounds(true).setDepth(5);
-    const w = this.goose.width, h = this.goose.height;
-    this.goose.body!.setSize(w * 0.35, h * 0.15).setOffset(w * 0.325, h * 0.8);
+    this.goose.body!.setSize(40, 20).setOffset(44, 100); // keep your tuned hitbox values here
 
     DIRS.forEach((d) =>
       this.anims.create({
@@ -67,8 +63,7 @@ class AreaScene extends Phaser.Scene {
       })
     );
 
-    // collision
-    a.solid.forEach((n) => {
+    props.area.solid.forEach((n) => {
       const l = layers[n];
       if (!l) return;
       l.setCollisionByExclusion([-1]);
@@ -76,7 +71,6 @@ class AreaScene extends Phaser.Scene {
     });
     layers["trees"]?.setDepth(10);
 
-    // interaction zones (object layer "interact")
     this.zones = (map.getObjectLayer("interact")?.objects ?? []).map((o) => ({
       name: o.name,
       rect: new Phaser.Geom.Rectangle(o.x!, o.y!, o.width!, o.height!),
@@ -91,7 +85,6 @@ class AreaScene extends Phaser.Scene {
   }
 
   update() {
-    // tell Vue when the goose enters or leaves a zone
     const hit = this.zones.find((z) => z.rect.contains(this.goose.x, this.goose.y));
     const name = hit?.name ?? null;
     if (name !== this.current) {
@@ -135,5 +128,8 @@ onBeforeUnmount(() => game?.destroy(true));
 </script>
 
 <style scoped>
-.area { position: absolute; inset: 0; }
+.area { 
+    position: absolute; inset: 0;
+    background: #3b3626;
+ }
 </style>
